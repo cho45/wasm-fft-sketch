@@ -108,10 +108,11 @@ const { performance } = require('perf_hooks');
 
 	console.log('call wasm functions directly'); {
 		{
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			start = performance.now();
 			inputZ.set(targetComplex, 0);
 			wasm.fft(inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4, targetReal.length);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			console.log(outputZ.slice(0, 16).join());
 
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
@@ -121,10 +122,12 @@ const { performance } = require('perf_hooks');
 		}
 
 		{
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
+			start = performance.now();
 			start = performance.now();
 			inputZ.set(targetComplex, 0);
 			wasm.fft(inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4, targetReal.length);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
 			wasm.ifft(inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4, targetReal.length);
@@ -136,10 +139,11 @@ const { performance } = require('perf_hooks');
 	console.log('call instance'); {
 		let fftPtr = wasm.fft_new(targetReal.length);
 		{
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			start = performance.now();
 			inputZ.set(targetComplex, 0);
 			wasm.fft_fft(fftPtr, inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			console.log(outputZ.slice(0, 16).join());
 
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
@@ -149,10 +153,11 @@ const { performance } = require('perf_hooks');
 		}
 
 		{
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			start = performance.now();
 			inputZ.set(targetComplex, 0);
 			wasm.fft_fft(fftPtr, inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
 			wasm.fft_ifft(fftPtr, inputPtr, inputZ.length * 4, outputPtr, outputZ.length * 4);
@@ -175,11 +180,10 @@ const { performance } = require('perf_hooks');
 	new Benchmark.Suite().
 		add('[wasm] rust no copy with instance', () => {
 			// create new Float32Array view for pointer to avoid detached ArrayBuffer
-			const inputZ_  = new Float32Array(wasm.memory.buffer, inputPtr_, input_.length);
-			const outputZ_ = new Float32Array(wasm.memory.buffer, outputPtr_, output_.length);
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			inputZ.set(targetComplex, 0);
 			wasm.fft_fft(fftPtr, inputPtr, inputZ.length, outputPtr, outputZ.length);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
 			wasm.fft_ifft(fftPtr, inputPtr, inputZ.length, outputPtr, outputZ.length);
 			return outputZ;
@@ -194,11 +198,10 @@ const { performance } = require('perf_hooks');
 		}).
 		add('[wasm] rust no copy', () => {
 			// create new Float32Array view for pointer to avoid detached ArrayBuffer
-			const inputZ_  = new Float32Array(wasm.memory.buffer, inputPtr_, input_.length);
-			const outputZ_ = new Float32Array(wasm.memory.buffer, outputPtr_, output_.length);
-			let [inputZ, inputPtr, outputZ, outputPtr] = [inputZ_, inputPtr_, outputZ_, outputPtr_];
+			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			inputZ.set(targetComplex, 0);
 			wasm.fft(inputPtr, inputZ.length, outputPtr, outputZ.length, targetReal.length);
+			[inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			[inputZ, inputPtr, outputZ, outputPtr] = [outputZ, outputPtr, inputZ, inputPtr];
 			wasm.ifft(inputPtr, inputZ.length, outputPtr, outputZ.length, targetReal.length);
 			return outputZ;
@@ -224,5 +227,5 @@ const { performance } = require('perf_hooks');
 		on('complete', function() {
 			console.log('Fastest is ' + this.filter('fastest').map('name'));
 		}).
-		run({ 'async': true });
+		run({});
 })();
