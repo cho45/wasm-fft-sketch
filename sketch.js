@@ -172,13 +172,14 @@ const { performance } = require('perf_hooks');
 
 
 	const Benchmark = require('benchmark');
+	const Table = require('cli-table');
 	const DSPJS = require('./assets/dsp.js');
 
 	const fftDspJs = new DSPJS.FFT(targetReal.length, 2000);
 	const fftPtr = wasm.fft_new(targetReal.length);
 	const fftinstance = new lib.FFT(targetReal.length);
 	new Benchmark.Suite().
-		add('[wasm] rust no copy with instance', () => {
+		add('[wasm] instance pointer', () => {
 			// create new Float32Array view for pointer to avoid detached ArrayBuffer
 			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			inputZ.set(targetComplex, 0);
@@ -188,7 +189,7 @@ const { performance } = require('perf_hooks');
 			wasm.fft_ifft(fftPtr, inputPtr, inputZ.length, outputPtr, outputZ.length);
 			return outputZ;
 		}).
-		add('[wasm] rust copy with instance', () => {
+		add('[wasm] instance wasm_bindgen', () => {
 			let [input, output] = [input_, output_];
 			input.set(targetComplex, 0);
 			fftinstance.fft(input, output);
@@ -196,7 +197,7 @@ const { performance } = require('perf_hooks');
 			fftinstance.ifft(input, output);
 			return output;
 		}).
-		add('[wasm] rust no copy', () => {
+		add('[wasm] one func pointer', () => {
 			// create new Float32Array view for pointer to avoid detached ArrayBuffer
 			let [inputZ, inputPtr, outputZ, outputPtr] = [new Float32Array(wasm.memory.buffer, inputPtr_, input_.length), inputPtr_, new Float32Array(wasm.memory.buffer, outputPtr_, output_.length), outputPtr_];
 			inputZ.set(targetComplex, 0);
@@ -206,7 +207,7 @@ const { performance } = require('perf_hooks');
 			wasm.ifft(inputPtr, inputZ.length, outputPtr, outputZ.length, targetReal.length);
 			return outputZ;
 		}).
-		add('[wasm] rust copy', () => {
+		add('[wasm] one func wasm_bindgen', () => {
 			let [input, output] = [input_, output_];
 			input.set(targetComplex, 0);
 			lib.fft(input, output, targetReal.length);
@@ -214,7 +215,7 @@ const { performance } = require('perf_hooks');
 			lib.ifft(input, output, targetReal.length);
 			return output;
 		}).
-		add('[js native] dsp.js', () => {
+		add('[js] instance dsp.js', () => {
 			fftDspJs.forward(targetReal);
 			return fftDspJs.inverse(fftDspJs.real, fftDspJs.imag);
 		}).
@@ -226,6 +227,26 @@ const { performance } = require('perf_hooks');
 		}).
 		on('complete', function() {
 			console.log('Fastest is ' + this.filter('fastest').map('name'));
+
+			const array = this.slice(0).sort( (a, b) => b.hz - a.hz);
+			const table = new Table({
+				chars: { 'top': '-' , 'top-mid': '+' , 'top-left': '+' , 'top-right': '+'
+					, 'bottom': '-' , 'bottom-mid': '+' , 'bottom-left': '+' , 'bottom-right': '+'
+					, 'left': '|' , 'left-mid': '+' , 'mid': '-' , 'mid-mid': '+'
+					, 'right': '|' , 'right-mid': '+' , 'middle': '|' },
+				head: ['name', 'ops'].concat( array.map( b => 'vs ' + b.name ) )
+			});
+			const comparison = array.map( (a, ia) => array.map( (b, ib) => {
+				if (ia === ib) return "-";
+				return Math.round((a.hz / b.hz - 1) * 100) + '%';
+			}));
+			array.forEach( (bench, i) => {
+				table.push([
+					bench.name,
+					`${bench.hz.toFixed(1)}ops/sec (+/-${bench.stats.rme.toFixed(2)}%)`
+				].concat(comparison[i]))
+			});
+			console.log(table.toString());
 		}).
 		run({});
 })();
